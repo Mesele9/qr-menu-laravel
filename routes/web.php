@@ -10,6 +10,7 @@ use App\Http\Controllers\LocalizationController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Admin\QrCodeController;
+use App\Http\Controllers\Admin\ImportController; // Add this line at the top
 
 
 /*
@@ -62,5 +63,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     // QR Code Generator Route
     Route::get('qr-code', [QrCodeController::class, 'show'])->name('qrcode.show'); 
+
+    Route::get('import/menu-items', [ImportController::class, 'showForm'])->name('import.menu.form');
+    Route::post('import/menu-items', [ImportController::class, 'handleImport'])->name('import.menu.handle');
 
 });
