@@ -20,6 +20,33 @@
         </div>
     @endif
 
+    <!-- === NEW: SEARCH AND FILTER FORM === -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form action="{{ route('admin.menu-items.index') }}" method="GET" class="row g-3 align-items-center">
+                <div class="col-md-5">
+                    <label for="search" class="visually-hidden">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" placeholder="Search by item name..." value="{{ request('search') }}">
+                </div>
+                <div class="col-md-5">
+                    <label for="category_id" class="visually-hidden">Category</label>
+                    <select class="form-select" id="category_id" name="category_id">
+                        <option value="">All Categories</option>
+                        @foreach ($categories as $category)
+                            <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                                {{ $category->getTranslation('name', 'en') }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- === END NEW SECTION === -->
+
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">

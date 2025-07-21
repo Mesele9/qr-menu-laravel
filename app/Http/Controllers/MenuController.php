@@ -26,15 +26,25 @@ class MenuController extends Controller
 
         $menuItemFilter = function ($query) use ($request) {
             $query->where('is_active', true);
+
+            // --- THIS IS THE CORRECTED SEARCH LOGIC ---
             if ($searchTerm = $request->input('search')) {
                 $query->where(function ($subQuery) use ($searchTerm) {
-                    $subQuery->where('name->en', 'LIKE', "%{$searchTerm}%")
-                            ->orWhere('description->en', 'LIKE', "%{$searchTerm}%")
-                            ->orWhere('name->am', 'LIKE', "%{$searchTerm}%")
-                            ->orWhere('name->so', 'LIKE', "%{$searchTerm}%")
-                            ->orWhere('name->om', 'LIKE', "%{$searchTerm}%");
+                    $lowerSearchTerm = '%' . strtolower($searchTerm) . '%';
+
+                    // Search English name AND description
+                    $subQuery->whereRaw("LOWER(JSON_UNQUOTE(name->'$.en')) LIKE ?", [$lowerSearchTerm])
+                             ->orWhereRaw("LOWER(JSON_UNQUOTE(description->'$.en')) LIKE ?", [$lowerSearchTerm]);
+                    
+                    // Also search the names in other languages
+                    $otherLocales = ['am', 'so', 'om'];
+                    foreach ($otherLocales as $locale) {
+                        $subQuery->orWhereRaw("LOWER(JSON_UNQUOTE(name->'$." . $locale . "')) LIKE ?", [$lowerSearchTerm]);
+                    }
                 });
             }
+            // --- END CORRECTION ---
+            
             if ($tagId = $request->input('filter_tag')) {
                 $query->whereHas('tags', function ($tagQuery) use ($tagId) {
                     $tagQuery->where('tags.id', $tagId);

@@ -11,11 +11,44 @@ use Illuminate\Support\Facades\Storage;
 
 class MenuItemController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $menuItems = MenuItem::with('category')->latest()->paginate(10);
-        return view('admin.menu-items.index', compact('menuItems'));
+        // Start with the base query for menu items, eager loading the category
+        $query = MenuItem::with('category')->latest();
+
+        // 1. Filter by Category
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        // 2. Search by Name
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            
+            // --- THIS IS THE CORRECTED LOGIC ---
+            // We use whereRaw to reliably query JSON columns within a nested closure.
+            // The json_unquote/json_extract function varies slightly between MySQL and MariaDB,
+            // so this approach is more robust.
+            $query->where(function($q) use ($searchTerm) {
+                $q->whereRaw("LOWER(JSON_UNQUOTE(name->'$." . 'en' . "')) LIKE ?", ['%' . strtolower($searchTerm) . '%'])
+                ->orWhereRaw("LOWER(JSON_UNQUOTE(name->'$." . 'am' . "')) LIKE ?", ['%' . strtolower($searchTerm) . '%'])
+                ->orWhereRaw("LOWER(JSON_UNQUOTE(name->'$." . 'so' . "')) LIKE ?", ['%' . strtolower($searchTerm) . '%'])
+                ->orWhereRaw("LOWER(JSON_UNQUOTE(name->'$." . 'om' . "')) LIKE ?", ['%' . strtolower($searchTerm) . '%']);
+            });
+            // --- END CORRECTION ---
+        }
+
+        // Paginate the results
+        $menuItems = $query->paginate(10)->withQueryString();
+
+        // 3. Fetch all categories for the filter dropdown
+        $categories = Category::orderBy('name->en')->get();
+        
+        // Pass the data to the view
+        return view('admin.menu-items.index', compact('menuItems', 'categories'));
     }
+
+
 
     public function create()
     {
